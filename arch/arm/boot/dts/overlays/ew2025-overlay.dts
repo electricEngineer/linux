@@ -1,0 +1,173 @@
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "brcm,bcm2835";
+
+	fragment@0 {
+		target = <&dsi0>;
+		__overlay__{
+			status = "okay";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			port {
+				dsi_out: endpoint {
+					remote-endpoint = <&in_dsi>;
+				};
+			};
+		};
+	};
+
+    fragment@1 {
+        target = <&i2c_csi_dsi0>;
+        __overlay__ {
+            #address-cells = <1>;
+			#size-cells = <0>;
+            status = "okay";
+            sn65dsi83: bridge@2c {
+                compatible = "ti,sn65dsi83";
+                reg = <0x2c>;
+                /*
+                enable-gpios = <&rp1_gpio 34 GPIO_ACTIVE_HIGH>;
+                pinctrl-names = "default";
+                pinctrl-0 = <&rp1_gpio_34>;
+                */
+
+                status = "okay";
+
+                ports {
+                    #address-cells = <1>;
+                    #size-cells = <0>;
+        
+                    port@0 {
+                        reg = <0>;
+        
+                        in_dsi: endpoint {
+                            remote-endpoint = <&dsi_out>;
+                            data-lanes = <1 2 3 4>;
+                        };
+                    };
+        
+                    port@2 {
+                        reg = <2>;
+        
+                        lvds_out: endpoint {
+                            remote-endpoint = <&in_lvds>;
+                        };
+                    };
+                };
+            };
+            mxt1066td: touch@4a {
+                compatible = "atmel,maxtouch";
+                reg = <0x4a>;
+                interrupt-parent = <&gpio>;
+                interrupts = <20 IRQ_TYPE_EDGE_FALLING>;
+                pinctrl-names = "default";
+                pinctrl-0 = <&rp1_gpio_20>, <&rp1_gpio_26>;
+                reset-gpios = <&rp1_gpio 26 GPIO_ACTIVE_LOW>;
+                status = "okay";
+            };
+        };
+    };
+
+    fragment@2 {
+        target-path = "/";
+        __overlay__ {
+            lcd_backlight: lcd-backlight {
+                compatible = "gpio-backlight";
+                gpios = <&rp1_gpio 35 GPIO_ACTIVE_HIGH>;
+                pinctrl-names = "default";
+                pinctrl-0 = <&rp1_gpio_35>;
+                default-on;
+                status = "disabled";
+            };
+            panel: panel {
+                compatible = "panel-lvds";
+                width-mm = <217>;
+                height-mm = <136>;
+                data-mapping = "vesa-24";
+                //backlight = <&lcd_backlight>;
+                backlight = <0>;
+                rotation = <180>;
+                status = "okay";
+        
+                panel-timing {
+                    clock-frequency = <71100000>;
+                    hactive = <1280>;
+                    vactive = <800>;
+                    hfront-porch = <50>;
+                    hsync-len = <60>;
+                    hback-porch = <50>;
+                    vfront-porch = <7>;
+                    vsync-len = <9>;
+                    vback-porch = <7>;
+                };
+        
+                port {
+                    in_lvds: endpoint {
+                        remote-endpoint = <&lvds_out>;
+                    };
+                };
+            };
+            bl_reg: bl_reg {
+                compatible = "regulator-fixed";
+                regulator-name = "bl_reg";
+                regulator-always-on;
+                enable-active-high;
+                gpio = <&rp1_gpio 35 GPIO_ACTIVE_HIGH>;
+                pinctrl-names = "default";
+                pinctrl-0 = <&rp1_gpio_35>;
+                status = "okay";
+            };
+        };
+    };
+
+    fragment@3 {
+        target = <&rp1_gpio>;
+        __overlay__ {
+            rp1_gpio_34: rp1_gpio_34 {
+                function = "gpio";
+                pins = "gpio34";
+            };
+            rp1_gpio_35: rp1_gpio_35 {
+                function = "gpio";
+                pins = "gpio35";
+            };
+            rp1_gpio_20: rp1_gpio_20 {
+                function = "gpio";
+                pins = "gpio20";
+                bias-pull-up;
+            };
+            rp1_gpio_26: rp1_gpio_26 {
+                function = "gpio";
+                pins = "gpio26";
+            };
+        };
+    };
+
+    fragment@4 {
+        target = <&cam0_reg>;
+        __overlay__ {
+            status = "okay";
+            regulator-always-on;
+        };
+    };
+
+	fragment@5 {
+		target = <&i2c0if>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@6 {
+		target = <&i2c0mux>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+};
